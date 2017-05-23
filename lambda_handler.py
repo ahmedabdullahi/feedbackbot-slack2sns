@@ -1,7 +1,7 @@
 '''
-
-Slack command text to SNS
-
+Feedbackbot - slack2sns
+Publishing to SNS from Slack Command
+Part of https://woobot.io/weve-got-somethin-for-ya/
 '''
 
 import os
@@ -14,6 +14,9 @@ LOGGER = logging.getLogger()
 LOGGER.setLevel(logging.DEBUG)
 
 SNS = boto3.client('sns')
+
+SLACK_VERIFICATION_TOKEN = os.environ.get('SLACK_VERIFICATION_TOKEN')
+SNS_FEEDBACK_ARN = os.environ.get('SNS_FEEDBACK_ARN')
 
 class DecoderError(Exception):
     ''' Exception class for decoder '''
@@ -48,7 +51,7 @@ def lambda_handler(event, context):
     try:
         payload = decode_urlencoded(event['body'])
 
-        if 'token' not in payload or (payload['token'] != os.environ.get('SLACK_VERIFICATION_TOKEN')):
+        if 'token' not in payload or (payload['token'] != SLACK_VERIFICATION_TOKEN):
             # This payload did NOT come from Slack.
             LOGGER.warning('Payload received from unverified source')
             return
@@ -57,7 +60,7 @@ def lambda_handler(event, context):
             slackmsg = ':cry: No comments were included! You gotta give me something to work with here!'
         else:
             SNS.publish(
-                TopicArn=os.environ.get('SNS_FEEDBACK_ARN'),
+                TopicArn=SNS_FEEDBACK_ARN,
                 Message=json.dumps(payload),
                 Subject='feedback'
             )
