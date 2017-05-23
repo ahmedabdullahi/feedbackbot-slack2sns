@@ -48,11 +48,16 @@ def lambda_handler(event, context):
     try:
         payload = decode_urlencoded(event['body'])
 
+        if 'token' not in payload or (payload['token'] != os.environ.get('SLACK_VERIFICATION_TOKEN')):
+            # This payload did NOT come from Slack.
+            LOGGER.warning('Payload received from unverified source')
+            return
+
         if 'text' not in payload or payload['text'] is None or payload['text'] == '':
             slackmsg = ':cry: No comments were included! You gotta give me something to work with here!'
         else:
             SNS.publish(
-                TopicArn=os.environ.get('SNS-FEEDBACK-ARN'),
+                TopicArn=os.environ.get('SNS_FEEDBACK_ARN'),
                 Message=json.dumps(payload),
                 Subject='feedback'
             )
